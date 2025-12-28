@@ -1,0 +1,215 @@
+# Programme Python en Bio-informatique
+# Ce script couvre plusieurs aspects : analyse de séquences ADN (génome SARS-CoV-2),
+# modélisation biologique (modèle SIR pour épidémie),
+# analyse de données biologiques (traitement FASTA et stats),
+# introduction au ML (classification simple de protéines avec scikit-learn),
+# et un dashboard web simple avec Streamlit (préféré car plus facile à utiliser et interactif que Flask pour des visualisations rapides).
+
+# Instructions d'installation :
+# Installez les packages nécessaires via pip (sur votre machine avec VS Code) :
+# pip install biopython numpy scipy matplotlib scikit-learn streamlit pandas
+
+import os
+from Bio import Entrez, SeqIO
+from Bio.SeqUtils import gc_fraction
+from Bio.Align import PairwiseAligner
+from Bio.Align.Applications import ClustalwCommandline  # Pour alignement multiple et arbre
+from Bio import Phylo
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import odeint
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+import streamlit as st
+import re
+
+# Partie 1 : Analyse de séquences ADN (génome SARS-CoV-2)
+def analyse_genome_sars_cov2():
+    # Téléchargement des données publiques depuis NCBI GenBank
+    # Utilisez votre email pour Entrez (remplacez par le vôtre)
+    Entrez.email = "votre.email@example.com"
+    
+    # ID du génome SARS-CoV-2 (exemple : référence NC_045512)
+    handle = Entrez.efetch(db="nucleotide", id="NC_045512", rettype="gb", retmode="text")
+    record = SeqIO.read(handle, "genbank")
+    handle.close()
+    
+    sequence = record.seq
+    print(f"Séquence du génome SARS-CoV-2 téléchargée : {len(sequence)} bases")
+    
+    # Calcul de la composition en bases (GC%)
+    gc_content = gc_fraction(sequence) * 100
+    print(f"Contenu GC : {gc_content:.2f}%")
+    
+    # Chercher des motifs (ex. : site de restriction EcoRI : GAATTC)
+    motif = "GAATTC"
+    positions = [m.start() for m in re.finditer(motif, str(sequence))]
+    print(f"Nombre de sites EcoRI trouvés : {len(positions)}")
+    if positions:
+        print(f"Positions des 5 premiers : {positions[:5]}")
+    
+    # Alignement de séquences simples (utilisation de Biopython pour Needleman-Wunsch)
+    seq1 = sequence[:100]  # Première partie
+    seq2 = sequence[100:200]  # Seconde partie (pour demo)
+    aligner = PairwiseAligner()
+    aligner.mode = 'global'  # Needleman-Wunsch
+    alignments = aligner.align(seq1, seq2)
+    print("Alignement exemple :")
+    print(alignments[0])
+    
+    # Bonus : Comparaison de variants (ex. : original vs Delta - IDs simplifiés)
+    # Pour un vrai variant, utilisez un autre ID, ex. MZ344997 pour Delta-like
+    handle_delta = Entrez.efetch(db="nucleotide", id="MZ344997", rettype="gb", retmode="text")
+    record_delta = SeqIO.read(handle_delta, "genbank")
+    handle_delta.close()
+    seq_delta = record_delta.seq[:len(sequence)]  # Troncature pour comparaison
+    alignments_variant = aligner.align(sequence[:1000], seq_delta[:1000])  # Limité pour perf
+    print(f"Score d'alignement avec variant : {alignments_variant[0].score}")
+    
+    # Visualisation d'un arbre phylogénétique simple
+    # Pour demo, alignement multiple avec ClustalW (installez ClustalW séparément si besoin)
+    # Écrivez des séquences dans un fichier FASTA
+    with open("sequences.fasta", "w") as f:
+        f.write(">SARS-CoV-2\n" + str(sequence[:500]) + "\n")
+        f.write(">Variant\n" + str(seq_delta[:500]) + "\n")
+    
+    clustalw_cline = ClustalwCommandline("clustalw2", infile="sequences.fasta")
+    stdout, stderr = clustalw_cline()
+    
+    # Lire l'arbre
+    tree = Phylo.read("sequences.dnd", "newick")
+    Phylo.draw_ascii(tree)
+    
+# Partie 2 : Modélisation biologique simple (modèle SIR pour épidémie)
+def modelisation_sir():
+    # Modèle SIR : Susceptible, Infected, Recovered
+    def sir_model(y, t, beta, gamma):
+        S, I, R = y
+        dS_dt = -beta * S * I
+        dI_dt = beta * S * I - gamma * I
+        dR_dt = gamma * I
+        return [dS_dt, dI_dt, dR_dt]
+    
+    # Paramètres initiaux
+    N = 1000  # Population
+    I0 = 1    # Infectés initiaux
+    R0 = 0    # Récupérés initiaux
+    S0 = N - I0 - R0
+    beta = 0.3  # Taux d'infection
+    gamma = 0.1 # Taux de récupération
+    
+    t = np.linspace(0, 100, 1000)  # Temps
+    
+    # Résolution ODE
+    solution = odeint(sir_model, [S0, I0, R0], t, args=(beta, gamma))
+    S, I, R = solution.T
+    
+    # Visualisation
+    plt.figure()
+    plt.plot(t, S, label='Susceptibles')
+    plt.plot(t, I, label='Infectés')
+    plt.plot(t, R, label='Récupérés')
+    plt.xlabel('Temps')
+    plt.ylabel('Population')
+    plt.title('Modèle SIR')
+    plt.legend()
+    plt.show()
+    
+    # Interface simple (input console pour VS Code)
+    print("Modifiez les paramètres :")
+    beta = float(input("Taux d'infection (beta, defaut 0.3) : ") or 0.3)
+    gamma = float(input("Taux de récupération (gamma, defaut 0.1) : ") or 0.1)
+    # Relance la simu avec nouveaux params (code omis pour brevité, réutilisez odeint)
+
+# Partie 3 : Analyse de données biologiques
+def analyse_donnees_bio():
+    # Exemple : Télécharger un dataset FASTA d'UniProt (ex. insuline humaine)
+    # Pour demo, supposons un fichier local 'insuline.fasta' téléchargé manuellement
+    # Ou utilisez Entrez pour protéines
+    Entrez.email = "votre.email@example.com"
+    handle = Entrez.efetch(db="protein", id="P01308", rettype="fasta", retmode="text")  # Insuline humaine
+    record = SeqIO.read(handle, "fasta")
+    handle.close()
+    
+    # Stats basiques
+    seq = record.seq
+    base_counts = {'A': seq.count('A'), 'C': seq.count('C'), 'G': seq.count('G'), 'T': seq.count('T')}
+    print("Comptage des bases (pour ADN, adaptez pour protéines) :", base_counts)
+    
+    # Visualisation simple (histogramme)
+    plt.bar(base_counts.keys(), base_counts.values())
+    plt.title('Composition en bases')
+    plt.show()
+    
+    # Prédiction structure secondaire ARN simple (règles basiques : appariement GC/AU)
+    # Pour demo, sur une petite séquence ARN
+    arn_seq = "GGAUCGAUCGUAUCG"
+    # Implémentation basique : compter paires possibles (non optimal)
+    pairs = arn_seq.count("GC") + arn_seq.count("CG") + arn_seq.count("AU") + arn_seq.count("UA")
+    print(f"Nombre de paires potentielles dans {arn_seq} : {pairs}")
+
+# Partie 4 : Introduction au Machine Learning
+def intro_ml():
+    # Dataset simple : Iris pour demo (adapté à bio : classification fleurs comme "protéines")
+    from sklearn.datasets import load_iris
+    data = load_iris()
+    X = data.data
+    y = data.target
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    
+    clf = RandomForestClassifier()
+    clf.fit(X_train, y_train)
+    predictions = clf.predict(X_test)
+    print(f"Précision : {accuracy_score(y_test, predictions)}")
+    
+    # Adaptation bio : Imaginez classer protéines basées sur features (longueur, GC, etc.)
+
+# Partie 5 : Dashboard web avec Streamlit (préféré car simple et interactif)
+def dashboard_streamlit():
+    # Lancez avec : streamlit run ce_script.py
+    st.title("Dashboard Bio-informatique")
+    
+    # Intégrez les parties
+    if st.button("Analyser Génome SARS-CoV-2"):
+        analyse_genome_sars_cov2()
+    
+    st.subheader("Modèle SIR")
+    beta = st.slider("Beta", 0.0, 1.0, 0.3)
+    gamma = st.slider("Gamma", 0.0, 1.0, 0.1)
+    # Simulez et affichez graphique (adaptez odeint pour Streamlit)
+    t = np.linspace(0, 100, 1000)
+    solution = odeint(sir_model, [999, 1, 0], t, args=(beta, gamma))
+    fig, ax = plt.subplots()
+    ax.plot(t, solution[:, 0], label='S')
+    ax.plot(t, solution[:, 1], label='I')
+    ax.plot(t, solution[:, 2], label='R')
+    st.pyplot(fig)
+    
+    # Ajoutez autres sections similarly
+
+# Fonction principale
+if __name__ == "__main__":
+    print("Choisissez une section :")
+    print("1: Analyse Genome")
+    print("2: Modelisation SIR")
+    print("3: Analyse Donnees")
+    print("4: Intro ML")
+    print("5: Lancer Dashboard Streamlit")
+    
+    choix = input("Entrez le numéro : ")
+    if choix == '1':
+        analyse_genome_sars_cov2()
+    elif choix == '2':
+        modelisation_sir()
+    elif choix == '3':
+        analyse_donnees_bio()
+    elif choix == '4':
+        intro_ml()
+    elif choix == '5':
+        # Pour Streamlit, lancez séparément ou intégrez
+        print("Exécutez 'streamlit run nom_du_fichier.py' dans le terminal VS Code")
+    else:
+        print("Choix invalide")
