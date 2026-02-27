@@ -5,9 +5,7 @@
 # introduction au ML (classification simple de protéines avec scikit-learn),
 # et un dashboard web simple avec Streamlit (préféré car plus facile à utiliser et interactif que Flask pour des visualisations rapides).
 
-# Instructions d'installation :
-# Installez les packages nécessaires via pip (sur votre machine avec VS Code) :
-# pip install biopython numpy scipy matplotlib scikit-learn streamlit pandas
+
 
 import os
 from Bio import Entrez, SeqIO
