@@ -1,10 +1,5 @@
-# Programme Bio-informatique Simple en Python 🧬
-
-Ce projet est un  programme Python  qui introduit plusieurs concepts  de la **bio-informatique** 
-
-Il a été conçu pour être exécuté  par toute personne ayant  installé python , sans besoin de connexion internet.
-
-### Ce que fait le programme
+# Programme pour de la génétique  en Python 
+# Ce que fait le programme
 
 Le script propose 4 issues possibles :
 
@@ -24,8 +19,7 @@ Le script propose 4 issues possibles :
    - compte les acides aminés les plus fréquents  
    - Affiche un histogramme de la composition
 
-4. **Introduction (légère) au Machine Learning**  
+4. **Machine Learning**  
    - Utilise un exemple classique (dataset Iris) pour montrer comment un algorithme peut classer des données  
-   - Analogie directe avec la classification de protéines ou la prédiction de maladies en bio-informatique
-
+   - Analogie directe avec la classification de protéines ou la prédiction de maladies 
 pour l'utiliser veuillez installer le python , ce programme a été fait sur visual studio code
