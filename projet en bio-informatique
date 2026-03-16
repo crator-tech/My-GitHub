@@ -2,8 +2,8 @@
 # Ce script couvre plusieurs aspects : analyse de séquences ADN (génome SARS-CoV-2),
 # modélisation biologique (modèle SIR pour épidémie),
 # analyse de données biologiques (traitement FASTA et stats),
-# introduction au ML (classification simple de protéines avec scikit-learn),
-# et un dashboard web simple avec Streamlit (préféré car plus facile à utiliser et interactif que Flask pour des visualisations rapides).
+# ML (classification simple de protéines avec scikit-learn),
+# et un dashboard web simple avec Streamlit (préféré car plus facile à utiliser et interactif que Flask pour des visualisations rapides mais en soit c'est vrai que j'aurais pu le faire avec Flask(pour la prochaine fois)).
 
 
 
