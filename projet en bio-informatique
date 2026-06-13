@@ -4,7 +4,7 @@
 # analyse de données biologiques (traitement FASTA et stats),
 # ML (classification simple de protéines avec scikit-learn),
 # et un dashboard web simple avec Streamlit (préféré car plus facile à utiliser et interactif que Flask pour des visualisations rapides mais en soit c'est vrai que j'aurais pu le faire avec Flask(pour la prochaine fois)).
-#Une partie de ce code a été fait en utilisant notamment la documentation python sur internet
+# Une partie de ce code a été fait en utilisant notamment la documentation python sur internet
 
 
 import os
